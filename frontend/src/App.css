@@ -110,6 +110,15 @@ button:disabled {
   padding: 16px;
 }
 
+.project {
+  cursor: pointer;
+}
+
+.project.selected {
+  border: 2px solid #4f46e5;
+  background: #f8faff;
+}
+
 .project h3 {
   margin: 0 0 6px;
 }
@@ -138,4 +147,54 @@ button:disabled {
 
 .empty-state {
   color: #6b7280;
+}
+
+.task-list {
+  display: grid;
+  gap: 12px;
+}
+
+.task {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.task h3 {
+  margin: 0 0 6px;
+}
+
+.task p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.task-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.priority {
+  white-space: nowrap;
+  background: #f3f4f6;
+  color: #374151;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 12px;
+  font: inherit;
+  background: #ffffff;
 }
