@@ -1,10 +1,24 @@
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from database import Base, engine, get_db
-from models import Project
-from schemas import ProjectCreate, ProjectResponse
+from database import Base, SessionLocal, engine
+from models import Project, Task
+from schemas import (
+    ProjectCreate,
+    ProjectResponse,
+    TaskCreate,
+    TaskResponse,
+)
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -47,3 +61,68 @@ def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
 @app.get("/projects", response_model=list[ProjectResponse])
 def get_projects(db: Session = Depends(get_db)):
     return db.query(Project).all()
+
+@app.post(
+    "/projects/{project_id}/tasks",
+    response_model=TaskResponse,
+)
+def create_task(
+    project_id: int,
+    task: TaskCreate,
+    db: Session = Depends(get_db),
+):
+    project = (
+        db.query(Project)
+        .filter(Project.id == project_id)
+        .first()
+    )
+
+    if not project:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found",
+        )
+
+    new_task = Task(
+        project_id=project_id,
+        name=task.name,
+        description=task.description,
+        status=task.status,
+        priority=task.priority,
+        due_date=task.due_date,
+        estimated_hours=task.estimated_hours,
+        actual_hours=task.actual_hours,
+    )
+
+    db.add(new_task)
+    db.commit()
+    db.refresh(new_task)
+
+    return new_task
+
+
+@app.get(
+    "/projects/{project_id}/tasks",
+    response_model=list[TaskResponse],
+)
+def get_tasks(
+    project_id: int,
+    db: Session = Depends(get_db),
+):
+    project = (
+        db.query(Project)
+        .filter(Project.id == project_id)
+        .first()
+    )
+
+    if not project:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found",
+        )
+
+    return (
+        db.query(Task)
+        .filter(Task.project_id == project_id)
+        .all()
+    )
