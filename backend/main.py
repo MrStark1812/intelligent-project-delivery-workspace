@@ -12,6 +12,15 @@ from schemas import (
     TaskUpdate,
 )
 
+from intelligence import (
+    calculate_delivery_metrics,
+    calculate_overdue_tasks,
+    calculate_effort_metrics,
+    calculate_schedule_risk,
+    calculate_effort_risk,
+    calculate_project_health,
+)
+
 
 def get_db():
     db = SessionLocal()
@@ -174,3 +183,58 @@ def update_task(
     db.refresh(existing_task)
 
     return existing_task
+
+
+@app.get("/projects/{project_id}/intelligence")
+def get_project_intelligence(
+    project_id: int,
+    db: Session = Depends(get_db),
+):
+    project = (
+        db.query(Project)
+        .filter(Project.id == project_id)
+        .first()
+    )
+
+    if not project:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found",
+        )
+
+    tasks = (
+        db.query(Task)
+        .filter(Task.project_id == project_id)
+        .all()
+    )
+
+    delivery_metrics = calculate_delivery_metrics(tasks)
+
+    overdue_tasks = calculate_overdue_tasks(tasks)
+
+    effort_metrics = calculate_effort_metrics(tasks)
+
+    schedule_risk = calculate_schedule_risk(
+        delivery_metrics["completion_percentage"],
+        len(overdue_tasks),
+    )
+
+    effort_risk = calculate_effort_risk(
+        effort_metrics["effort_variance_percentage"],
+    )
+
+    project_health = calculate_project_health(
+        schedule_risk,
+        effort_risk,
+    )
+
+    return {
+        "project_id": project.id,
+        "project_name": project.name,
+        **delivery_metrics,
+        "overdue_tasks": len(overdue_tasks),
+        **effort_metrics,
+        "schedule_risk": schedule_risk,
+        "effort_risk": effort_risk,
+        "project_health": project_health,
+    }

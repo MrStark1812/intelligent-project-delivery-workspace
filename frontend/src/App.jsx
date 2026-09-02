@@ -6,6 +6,7 @@ import {
   createTask as createTaskApi,
   getProjects,
   getTasks,
+  getProjectIntelligence,
   updateTask,
 } from "./services/api";
 
@@ -26,6 +27,10 @@ function App() {
   const [taskPriority, setTaskPriority] = useState("Medium");
   const [taskDueDate, setTaskDueDate] = useState("");
   const [taskEstimatedHours, setTaskEstimatedHours] = useState("");
+
+  const [intelligence, setIntelligence] = useState(null);
+  const [intelligenceLoading, setIntelligenceLoading] = useState(false);
+  const [intelligenceError, setIntelligenceError] = useState("");
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -58,6 +63,21 @@ function App() {
     setTasks([]);
   } finally {
     setTasksLoading(false);
+  }
+};
+
+  const fetchIntelligence = async (projectId) => {
+  try {
+    setIntelligenceLoading(true);
+    setIntelligenceError("");
+
+    const data = await getProjectIntelligence(projectId);
+    setIntelligence(data);
+  } catch (err) {
+    setIntelligenceError(err.message);
+    setIntelligence(null);
+  } finally {
+    setIntelligenceLoading(false);
   }
 };
 
@@ -101,24 +121,12 @@ const saveTask = async (taskId) => {
   }
 };
 
-  const totalTasks = tasks.length;
-
-  const completedTasks = tasks.filter(
-    (task) => task.status === "Completed"
-  ).length;
-
-  const inProgressTasks = tasks.filter(
-    (task) => task.status === "In Progress"
-  ).length;
-
-  const notStartedTasks = tasks.filter(
-    (task) => task.status === "Not Started"
-  ).length;
-
-  const completionPercentage =
-    totalTasks === 0
-      ? 0
-      : Math.round((completedTasks / totalTasks) * 100);
+  const totalTasks = intelligence?.total_tasks ?? 0;
+const completedTasks = intelligence?.completed_tasks ?? 0;
+const inProgressTasks = intelligence?.in_progress_tasks ?? 0;
+const notStartedTasks = intelligence?.not_started_tasks ?? 0;
+const completionPercentage =
+  intelligence?.completion_percentage ?? 0;
 
   useEffect(() => {
     fetchProjects();
@@ -127,10 +135,12 @@ const saveTask = async (taskId) => {
   useEffect(() => {
   if (!selectedProjectId) {
     setTasks([]);
+    setIntelligence(null);
     return;
   }
 
   fetchTasks(selectedProjectId);
+  fetchIntelligence(selectedProjectId);
 }, [selectedProjectId]);
 
   const createProject = async (event) => {
@@ -354,6 +364,82 @@ const saveTask = async (taskId) => {
                             className="progress-fill"
                             style={{ width: `${completionPercentage}%` }}
                           />
+                        </div>
+                      </div>
+
+                                            <div className="intelligence-section">
+                        <div className="metrics">
+                          <div className="metric">
+                            <span className="metric-label">Overdue Tasks</span>
+                            <strong>
+                              {intelligence?.overdue_tasks ?? 0}
+                            </strong>
+                          </div>
+
+                          <div className="metric">
+                            <span className="metric-label">Estimated Hours</span>
+                            <strong>
+                              {intelligence?.estimated_hours ?? 0}
+                            </strong>
+                          </div>
+
+                          <div className="metric">
+                            <span className="metric-label">Actual Hours</span>
+                            <strong>
+                              {intelligence?.actual_hours ?? 0}
+                            </strong>
+                          </div>
+
+                          <div className="metric">
+                            <span className="metric-label">Effort Variance</span>
+                            <strong>
+                              {intelligence?.effort_variance ?? 0}
+                            </strong>
+                          </div>
+
+                          <div className="metric">
+                            <span className="metric-label">Variance %</span>
+                            <strong>
+                              {intelligence?.effort_variance_percentage ?? 0}%
+                            </strong>
+                          </div>
+                        </div>
+
+                        <div className="risk-summary">
+                          <div>
+                            <span className="metric-label">Schedule Risk</span>
+                            <strong
+                              className={`risk-value risk-${(
+                                intelligence?.schedule_risk || ""
+                              ).toLowerCase()}`}
+                            >
+                            {intelligence?.schedule_risk ?? "—"}
+                          </strong>
+                        </div>
+
+                          <div>
+                            <span className="metric-label">Effort Risk</span>
+                            <strong
+                              className={`risk-value risk-${(
+                                intelligence?.effort_risk || ""
+                              ).toLowerCase()}`}
+                            >
+                              {intelligence?.effort_risk ?? "—"}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span className="metric-label">Project Health</span>
+                            <strong
+                              className={`risk-value health-${(
+                                intelligence?.project_health || ""
+                              )
+                                .toLowerCase()
+                                .replace(/\s+/g, "-")}`}
+                            >
+                              {intelligence?.project_health ?? "—"}
+                            </strong>
+                          </div>
                         </div>
                       </div>
                     </>

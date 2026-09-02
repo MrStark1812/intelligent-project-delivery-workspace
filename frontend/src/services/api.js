@@ -75,3 +75,15 @@ export const updateTask = async (projectId, taskId, task) => {
 
   return response.json();
 };
+
+export const getProjectIntelligence = async (projectId) => {
+  const response = await fetch(
+    `${API_URL}/projects/${projectId}/intelligence`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to load project intelligence");
+  }
+
+  return response.json();
+};

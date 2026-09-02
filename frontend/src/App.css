@@ -249,3 +249,57 @@ select {
   border-radius: 999px;
   transition: width 0.3s ease;
 }
+
+.intelligence-section {
+  margin-top: 24px;
+}
+
+.risk-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.risk-summary > div {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px;
+  background: #f9fafb;
+}
+
+.risk-summary strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 18px;
+}
+
+@media (max-width: 700px) {
+  .risk-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+.risk-value,
+.health-healthy,
+.health-needs-attention,
+.health-at-risk {
+  display: block;
+  margin-top: 6px;
+  font-size: 18px;
+}
+
+.risk-low,
+.health-healthy {
+  color: #15803d;
+}
+
+.risk-medium,
+.health-needs-attention {
+  color: #b45309;
+}
+
+.risk-high,
+.health-at-risk {
+  color: #b91c1c;
+}
