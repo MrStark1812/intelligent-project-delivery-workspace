@@ -6,6 +6,7 @@ import {
   createTask as createTaskApi,
   getProjects,
   getTasks,
+  updateTask,
 } from "./services/api";
 
 function App() {
@@ -14,6 +15,10 @@ function App() {
   const [tasks, setTasks] = useState([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [tasksError, setTasksError] = useState("");
+  const [editingTaskId, setEditingTaskId] = useState(null);
+  const [editStatus, setEditStatus] = useState("");
+  const [editPriority, setEditPriority] = useState("");
+  const [savingTask, setSavingTask] = useState(false);
   const [taskCreating, setTaskCreating] = useState(false);
 
   const [taskName, setTaskName] = useState("");
@@ -55,6 +60,65 @@ function App() {
     setTasksLoading(false);
   }
 };
+
+const startEditingTask = (task) => {
+  setEditingTaskId(task.id);
+  setEditStatus(task.status);
+  setEditPriority(task.priority);
+};
+
+const cancelEditingTask = () => {
+  setEditingTaskId(null);
+  setEditStatus("");
+  setEditPriority("");
+};
+
+const saveTask = async (taskId) => {
+  try {
+    setSavingTask(true);
+    setTasksError("");
+
+    const updatedTask = await updateTask(
+      selectedProjectId,
+      taskId,
+      {
+        status: editStatus,
+        priority: editPriority,
+      }
+    );
+
+    setTasks((currentTasks) =>
+      currentTasks.map((task) =>
+        task.id === taskId ? updatedTask : task
+      )
+    );
+
+    cancelEditingTask();
+  } catch (err) {
+    setTasksError(err.message);
+  } finally {
+    setSavingTask(false);
+  }
+};
+
+  const totalTasks = tasks.length;
+
+  const completedTasks = tasks.filter(
+    (task) => task.status === "Completed"
+  ).length;
+
+  const inProgressTasks = tasks.filter(
+    (task) => task.status === "In Progress"
+  ).length;
+
+  const notStartedTasks = tasks.filter(
+    (task) => task.status === "Not Started"
+  ).length;
+
+  const completionPercentage =
+    totalTasks === 0
+      ? 0
+      : Math.round((completedTasks / totalTasks) * 100);
 
   useEffect(() => {
     fetchProjects();
@@ -241,6 +305,61 @@ function App() {
           )}
                 </section>
 
+                <section className="card">
+                  <div className="section-header">
+                    <h2>Project Dashboard</h2>
+                  </div>
+
+                  {!selectedProjectId ? (
+                    <p className="empty-state">
+                      Select a project to view delivery metrics.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="metrics">
+                        <div className="metric">
+                          <span className="metric-label">Total Tasks</span>
+                          <strong>{totalTasks}</strong>
+                        </div>
+
+                        <div className="metric">
+                          <span className="metric-label">Completed</span>
+                          <strong>{completedTasks}</strong>
+                        </div>
+
+                        <div className="metric">
+                          <span className="metric-label">In Progress</span>
+                          <strong>{inProgressTasks}</strong>
+                        </div>
+
+                        <div className="metric">
+                          <span className="metric-label">Not Started</span>
+                          <strong>{notStartedTasks}</strong>
+                        </div>
+
+                        <div className="metric">
+                          <span className="metric-label">Completion</span>
+                          <strong>{completionPercentage}%</strong>
+                        </div>
+                                            </div>
+
+                                            <div className="progress-section">
+                        <div className="progress-header">
+                          <span>Project Completion</span>
+                          <strong>{completionPercentage}%</strong>
+                        </div>
+
+                        <div className="progress-bar">
+                          <div
+                            className="progress-fill"
+                            style={{ width: `${completionPercentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </section>
+
         <section className="card">
           <div className="section-header">
             <h2>Tasks</h2>
@@ -337,25 +456,73 @@ function App() {
             <div className="task-list">
               {tasks.map((task) => (
                 <article className="task" key={task.id}>
-                  <div>
-                    <h3>{task.name}</h3>
+            <div>
+              <h3>{task.name}</h3>
 
-                    <p>
-                      {task.description ||
-                        "No description provided."}
-                    </p>
-                  </div>
+              <p>
+                {task.description ||
+                  "No description provided."}
+              </p>
+            </div>
 
-                  <div className="task-meta">
-                    <span className="status">
-                      {task.status}
-                    </span>
+            {editingTaskId === task.id ? (
+              <div className="task-edit">
+                <select
+                  value={editStatus}
+                  onChange={(event) =>
+                    setEditStatus(event.target.value)
+                  }
+                >
+                  <option value="Not Started">Not Started</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Completed">Completed</option>
+                </select>
 
-                    <span className="priority">
-                      {task.priority}
-                    </span>
-                  </div>
-                </article>
+                <select
+                  value={editPriority}
+                  onChange={(event) =>
+                    setEditPriority(event.target.value)
+                  }
+                >
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                  <option value="Critical">Critical</option>
+                </select>
+
+                <button
+                  onClick={() => saveTask(task.id)}
+                  disabled={savingTask}
+                >
+                  {savingTask ? "Saving..." : "Save"}
+                </button>
+
+                <button
+                  className="secondary-button"
+                  onClick={cancelEditingTask}
+                  disabled={savingTask}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="task-meta">
+                <span className="status">
+                  {task.status}
+                </span>
+
+                <span className="priority">
+                  {task.priority}
+                </span>
+
+                <button
+                  onClick={() => startEditingTask(task)}
+                >
+                  Edit
+                </button>
+              </div>
+            )}
+          </article>
               ))}
             </div>
           )}

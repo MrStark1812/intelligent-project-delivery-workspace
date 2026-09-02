@@ -29,7 +29,17 @@ class TaskBase(BaseModel):
 
 
 class TaskCreate(TaskBase):
+
     pass
+
+class TaskUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    status: str | None = None
+    priority: str | None = None
+    due_date: date | None = None
+    estimated_hours: float | None = None
+    actual_hours: float | None = None
 
 
 class TaskResponse(TaskBase):

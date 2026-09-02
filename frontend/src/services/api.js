@@ -56,3 +56,22 @@ export const createTask = async (projectId, task) => {
 
   return response.json();
 };
+
+export const updateTask = async (projectId, taskId, task) => {
+  const response = await fetch(
+    `${API_URL}/projects/${projectId}/tasks/${taskId}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(task),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to update task");
+  }
+
+  return response.json();
+};

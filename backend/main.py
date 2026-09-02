@@ -9,6 +9,7 @@ from schemas import (
     ProjectResponse,
     TaskCreate,
     TaskResponse,
+    TaskUpdate,
 )
 
 
@@ -126,3 +127,50 @@ def get_tasks(
         .filter(Task.project_id == project_id)
         .all()
     )
+
+@app.put(
+    "/projects/{project_id}/tasks/{task_id}",
+    response_model=TaskResponse,
+)
+def update_task(
+    project_id: int,
+    task_id: int,
+    task: TaskUpdate,
+    db: Session = Depends(get_db),
+):
+    project = (
+        db.query(Project)
+        .filter(Project.id == project_id)
+        .first()
+    )
+
+    if not project:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found",
+        )
+
+    existing_task = (
+        db.query(Task)
+        .filter(
+            Task.id == task_id,
+            Task.project_id == project_id,
+        )
+        .first()
+    )
+
+    if not existing_task:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found",
+        )
+
+    update_data = task.model_dump(exclude_unset=True)
+
+    for field, value in update_data.items():
+        setattr(existing_task, field, value)
+
+    db.commit()
+    db.refresh(existing_task)
+
+    return existing_task
