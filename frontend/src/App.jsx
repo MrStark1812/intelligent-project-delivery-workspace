@@ -367,7 +367,7 @@ const completionPercentage =
                         </div>
                       </div>
 
-                                            <div className="intelligence-section">
+                      <div className="intelligence-section">
                         <div className="metrics">
                           <div className="metric">
                             <span className="metric-label">Overdue Tasks</span>
@@ -441,6 +441,116 @@ const completionPercentage =
                             </strong>
                           </div>
                         </div>
+                                            </div>
+
+                      <div className="ai-insights">
+                        <div className="section-header">
+                          <h3>AI Delivery Insights</h3>
+                        </div>
+
+                        {intelligenceLoading ? (
+                          <p>Generating project insights...</p>
+                        ) : intelligenceError ? (
+                          <p className="error">{intelligenceError}</p>
+                        ) : intelligence?.ai_evaluation ? (
+                          <>
+                            <div className="ai-health">
+                              <span className="metric-label">
+                                Health Assessment
+                              </span>
+
+                              <p>
+                                {intelligence.ai_evaluation.health_assessment}
+                              </p>
+                            </div>
+
+                            <div className="ai-columns">
+                              <div>
+                                <span className="metric-label">
+                                  Risks
+                                </span>
+
+                                {intelligence.ai_evaluation.risks.length === 0 ? (
+                                  <p className="empty-state">
+                                    No current risks identified.
+                                  </p>
+                                ) : (
+                                  <ul>
+                                    {intelligence.ai_evaluation.risks.map(
+                                      (risk, index) => (
+                                        <li key={index}>{risk}</li>
+                                      )
+                                    )}
+                                  </ul>
+                                )}
+                              </div>
+
+                              <div>
+                                <span className="metric-label">
+                                  Schedule Concerns
+                                </span>
+
+                                {intelligence.ai_evaluation.schedule_concerns.length === 0 ? (
+                                  <p className="empty-state">
+                                    No schedule concerns identified.
+                                  </p>
+                                ) : (
+                                  <ul>
+                                    {intelligence.ai_evaluation.schedule_concerns.map(
+                                      (concern, index) => (
+                                        <li key={index}>{concern}</li>
+                                      )
+                                    )}
+                                  </ul>
+                                )}
+                              </div>
+
+                              <div>
+                                <span className="metric-label">
+                                  Effort Concerns
+                                </span>
+
+                                {intelligence.ai_evaluation.effort_concerns.length === 0 ? (
+                                  <p className="empty-state">
+                                    No effort concerns identified.
+                                  </p>
+                                ) : (
+                                  <ul>
+                                    {intelligence.ai_evaluation.effort_concerns.map(
+                                      (concern, index) => (
+                                        <li key={index}>{concern}</li>
+                                      )
+                                    )}
+                                  </ul>
+                                )}
+                              </div>
+
+                              <div>
+                                <span className="metric-label">
+                                  Problem Areas
+                                </span>
+
+                                {intelligence.ai_evaluation.problem_areas.length === 0 ? (
+                                  <p className="empty-state">
+                                    No problem areas identified.
+                                  </p>
+                                ) : (
+                                  <ul>
+                                    {intelligence.ai_evaluation.problem_areas.map(
+                                      (problem, index) => (
+                                        <li key={index}>{problem}</li>
+                                      )
+                                    )}
+                                  </ul>
+                                )}
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <p className="empty-state">
+                            AI insights are not available.
+                          </p>
+                        )}
                       </div>
                     </>
                   )}

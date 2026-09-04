@@ -21,6 +21,11 @@ from intelligence import (
     calculate_project_health,
 )
 
+from ai_service import (
+    build_ai_evaluation_payload,
+    evaluate_project_with_ai,
+)
+
 
 def get_db():
     db = SessionLocal()
@@ -228,6 +233,7 @@ def get_project_intelligence(
         effort_risk,
     )
 
+
     return {
         "project_id": project.id,
         "project_name": project.name,
@@ -238,3 +244,58 @@ def get_project_intelligence(
         "effort_risk": effort_risk,
         "project_health": project_health,
     }
+
+
+@app.get("/projects/{project_id}/ai-payload")
+def get_ai_evaluation_payload(
+    project_id: int,
+    db: Session = Depends(get_db),
+):
+    project = (
+        db.query(Project)
+        .filter(Project.id == project_id)
+        .first()
+    )
+
+    if not project:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found",
+        )
+
+    tasks = (
+        db.query(Task)
+        .filter(Task.project_id == project_id)
+        .all()
+    )
+
+    delivery_metrics = calculate_delivery_metrics(tasks)
+
+    overdue_tasks = calculate_overdue_tasks(tasks)
+
+    effort_metrics = calculate_effort_metrics(tasks)
+
+    schedule_risk = calculate_schedule_risk(
+        delivery_metrics["completion_percentage"],
+        len(overdue_tasks),
+    )
+
+    effort_risk = calculate_effort_risk(
+        effort_metrics["effort_variance_percentage"],
+    )
+
+    project_health = calculate_project_health(
+        schedule_risk,
+        effort_risk,
+    )
+
+    return build_ai_evaluation_payload(
+        project=project,
+        tasks=tasks,
+        delivery_metrics=delivery_metrics,
+        overdue_tasks=overdue_tasks,
+        effort_metrics=effort_metrics,
+        schedule_risk=schedule_risk,
+        effort_risk=effort_risk,
+        project_health=project_health,
+    )

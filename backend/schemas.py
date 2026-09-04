@@ -47,3 +47,11 @@ class TaskResponse(TaskBase):
     project_id: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class AIEvaluationResponse(BaseModel):
+    health_assessment: str
+    risks: list[str]
+    schedule_concerns: list[str]
+    effort_concerns: list[str]
+    problem_areas: list[str]
