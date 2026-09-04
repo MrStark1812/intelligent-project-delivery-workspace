@@ -1,0 +1,5 @@
+project_name,project_description,project_status,task_name,task_description,task_status,task_priority,due_date,estimated_hours,actual_hours
+Tillster Restaurant Ordering Launch,Launch digital ordering for a restaurant customer,In Progress,Payment Gateway Integration,Integrate and validate the payment gateway,Completed,Medium,2026-09-05,10,18
+Tillster Restaurant Ordering Launch,Launch digital ordering for a restaurant customer,In Progress,Order History API,Build order history API and integrate with ordering flow,In Progress,High,2026-09-07,8,15
+Tillster Restaurant Ordering Launch,Launch digital ordering for a restaurant customer,In Progress,Mobile Checkout UI,Build the customer checkout experience,Not Started,Medium,2026-09-15,20,0
+Tillster Restaurant Ordering Launch,Launch digital ordering for a restaurant customer,In Progress,QA Regression Testing,Complete end-to-end regression testing,Not Started,High,2026-09-18,16,0

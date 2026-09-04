@@ -55,3 +55,25 @@ class AIEvaluationResponse(BaseModel):
     schedule_concerns: list[str]
     effort_concerns: list[str]
     problem_areas: list[str]
+
+
+class ImportTask(BaseModel):
+    project_name: str
+    project_description: str | None = None
+    project_status: str = "Not Started"
+
+    task_name: str
+    task_description: str | None = None
+    task_status: str = "Not Started"
+    task_priority: str = "Medium"
+
+    due_date: date | None = None
+
+    estimated_hours: float | None = None
+    actual_hours: float | None = None
+
+
+class ImportResponse(BaseModel):
+    projects_created: int
+    tasks_created: int
+    rows_processed: int

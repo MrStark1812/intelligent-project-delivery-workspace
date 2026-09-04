@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
@@ -25,6 +25,8 @@ from ai_service import (
     build_ai_evaluation_payload,
     evaluate_project_with_ai,
 )
+
+from import_service import parse_csv
 
 
 def get_db():
@@ -76,6 +78,101 @@ def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
 @app.get("/projects", response_model=list[ProjectResponse])
 def get_projects(db: Session = Depends(get_db)):
     return db.query(Project).all()
+
+
+@app.post("/import/csv")
+def import_csv(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    if not file.filename:
+        raise HTTPException(
+            status_code=400,
+            detail="CSV file is required.",
+        )
+
+    if not file.filename.lower().endswith(".csv"):
+        raise HTTPException(
+            status_code=400,
+            detail="Only CSV files are supported.",
+        )
+
+    try:
+        content = file.file.read()
+        imported_tasks = parse_csv(content)
+
+        if not imported_tasks:
+            raise HTTPException(
+                status_code=400,
+                detail="CSV file contains no data rows.",
+            )
+
+        projects_created = 0
+        tasks_created = 0
+
+        project_cache = {}
+
+        for imported_task in imported_tasks:
+            project_name = imported_task.project_name
+
+            if project_name not in project_cache:
+                project = (
+                    db.query(Project)
+                    .filter(Project.name == project_name)
+                    .first()
+                )
+
+                if not project:
+                    project = Project(
+                        name=project_name,
+                        description=(
+                            imported_task.project_description
+                        ),
+                        status=imported_task.project_status,
+                    )
+
+                    db.add(project)
+                    db.flush()
+
+                    projects_created += 1
+
+                project_cache[project_name] = project
+
+            project = project_cache[project_name]
+
+            task = Task(
+                project_id=project.id,
+                name=imported_task.task_name,
+                description=imported_task.task_description,
+                status=imported_task.task_status,
+                priority=imported_task.task_priority,
+                due_date=imported_task.due_date,
+                estimated_hours=imported_task.estimated_hours,
+                actual_hours=imported_task.actual_hours,
+            )
+
+            db.add(task)
+            tasks_created += 1
+
+        db.commit()
+
+        return {
+            "projects_created": projects_created,
+            "tasks_created": tasks_created,
+            "rows_processed": len(imported_tasks),
+        }
+
+    except HTTPException:
+        db.rollback()
+        raise
+
+    except Exception as exc:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=400,
+            detail=f"CSV import failed: {exc}",
+        ) from exc
 
 @app.post(
     "/projects/{project_id}/tasks",
