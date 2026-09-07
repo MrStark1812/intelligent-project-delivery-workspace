@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Date, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Column, Date, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -39,4 +39,19 @@ class Task(Base):
     project = relationship(
         "Project",
         back_populates="tasks",
+    )
+
+
+class ImportRecord(Base):
+    __tablename__ = "import_records"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    filename = Column(String(255), nullable=False)
+    file_hash = Column(String(64), nullable=False, unique=True, index=True)
+
+    imported_at = Column(
+        DateTime,
+        nullable=False,
+        server_default="CURRENT_TIMESTAMP",
     )

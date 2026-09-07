@@ -7,6 +7,7 @@ import {
   getProjects,
   getTasks,
   getProjectIntelligence,
+  getProjectAIEvaluation,
   updateTask,
 } from "./services/api";
 
@@ -31,6 +32,10 @@ function App() {
   const [intelligence, setIntelligence] = useState(null);
   const [intelligenceLoading, setIntelligenceLoading] = useState(false);
   const [intelligenceError, setIntelligenceError] = useState("");
+
+  const [aiEvaluation, setAiEvaluation] = useState(null);
+  const [aiEvaluationLoading, setAiEvaluationLoading] = useState(false);
+  const [aiEvaluationError, setAiEvaluationError] = useState("");
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -78,6 +83,21 @@ function App() {
     setIntelligence(null);
   } finally {
     setIntelligenceLoading(false);
+  }
+};
+
+const fetchAIEvaluation = async (projectId) => {
+  try {
+    setAiEvaluationLoading(true);
+    setAiEvaluationError("");
+
+    const data = await getProjectAIEvaluation(projectId);
+    setAiEvaluation(data);
+  } catch (err) {
+    setAiEvaluationError(err.message);
+    setAiEvaluation(null);
+  } finally {
+    setAiEvaluationLoading(false);
   }
 };
 
@@ -136,11 +156,13 @@ const completionPercentage =
   if (!selectedProjectId) {
     setTasks([]);
     setIntelligence(null);
+    setAiEvaluation(null);
     return;
   }
 
   fetchTasks(selectedProjectId);
   fetchIntelligence(selectedProjectId);
+  fetchAIEvaluation(selectedProjectId);
 }, [selectedProjectId]);
 
   const createProject = async (event) => {
@@ -448,11 +470,11 @@ const completionPercentage =
                           <h3>AI Delivery Insights</h3>
                         </div>
 
-                        {intelligenceLoading ? (
+                        {aiEvaluationLoading ? (
                           <p>Generating project insights...</p>
-                        ) : intelligenceError ? (
-                          <p className="error">{intelligenceError}</p>
-                        ) : intelligence?.ai_evaluation ? (
+                        ) : aiEvaluationError ? (
+                          <p className="error">{aiEvaluationError}</p>
+                        ) : aiEvaluation ? (
                           <>
                             <div className="ai-health">
                               <span className="metric-label">
@@ -460,7 +482,7 @@ const completionPercentage =
                               </span>
 
                               <p>
-                                {intelligence.ai_evaluation.health_assessment}
+                                {aiEvaluation.health_assessment}
                               </p>
                             </div>
 
@@ -470,13 +492,13 @@ const completionPercentage =
                                   Risks
                                 </span>
 
-                                {intelligence.ai_evaluation.risks.length === 0 ? (
+                                {aiEvaluation.risks.length === 0 ? (
                                   <p className="empty-state">
                                     No current risks identified.
                                   </p>
                                 ) : (
                                   <ul>
-                                    {intelligence.ai_evaluation.risks.map(
+                                    {aiEvaluation.risks.map(
                                       (risk, index) => (
                                         <li key={index}>{risk}</li>
                                       )
@@ -490,13 +512,13 @@ const completionPercentage =
                                   Schedule Concerns
                                 </span>
 
-                                {intelligence.ai_evaluation.schedule_concerns.length === 0 ? (
+                                {aiEvaluation.schedule_concerns.length === 0 ? (
                                   <p className="empty-state">
                                     No schedule concerns identified.
                                   </p>
                                 ) : (
                                   <ul>
-                                    {intelligence.ai_evaluation.schedule_concerns.map(
+                                    {aiEvaluation.schedule_concerns.map(
                                       (concern, index) => (
                                         <li key={index}>{concern}</li>
                                       )
@@ -510,13 +532,13 @@ const completionPercentage =
                                   Effort Concerns
                                 </span>
 
-                                {intelligence.ai_evaluation.effort_concerns.length === 0 ? (
+                                {aiEvaluation.effort_concerns.length === 0 ? (
                                   <p className="empty-state">
                                     No effort concerns identified.
                                   </p>
                                 ) : (
                                   <ul>
-                                    {intelligence.ai_evaluation.effort_concerns.map(
+                                    {aiEvaluation.effort_concerns.map(
                                       (concern, index) => (
                                         <li key={index}>{concern}</li>
                                       )
@@ -530,13 +552,13 @@ const completionPercentage =
                                   Problem Areas
                                 </span>
 
-                                {intelligence.ai_evaluation.problem_areas.length === 0 ? (
+                                {aiEvaluation.problem_areas.length === 0 ? (
                                   <p className="empty-state">
                                     No problem areas identified.
                                   </p>
                                 ) : (
                                   <ul>
-                                    {intelligence.ai_evaluation.problem_areas.map(
+                                    {aiEvaluation.problem_areas.map(
                                       (problem, index) => (
                                         <li key={index}>{problem}</li>
                                       )

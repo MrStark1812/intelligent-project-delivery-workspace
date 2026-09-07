@@ -1,9 +1,11 @@
+import hashlib
+from datetime import datetime
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from database import Base, SessionLocal, engine
-from models import Project, Task
+from models import ImportRecord, Project, Task
 from schemas import (
     ProjectCreate,
     ProjectResponse,
@@ -26,7 +28,7 @@ from ai_service import (
     evaluate_project_with_ai,
 )
 
-from import_service import parse_csv
+from import_service import parse_import_file
 
 
 def get_db():
@@ -80,33 +82,62 @@ def get_projects(db: Session = Depends(get_db)):
     return db.query(Project).all()
 
 
+def calculate_file_hash(content: bytes) -> str:
+    return hashlib.sha256(content).hexdigest()
+
+
 @app.post("/import/csv")
-def import_csv(
+@app.post("/import/file")
+def import_file(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
-    if not file.filename:
+    if not file.filename.lower().endswith(
+        (".csv", ".xls", ".xlsx")
+    ):
         raise HTTPException(
             status_code=400,
-            detail="CSV file is required.",
-        )
-
-    if not file.filename.lower().endswith(".csv"):
-        raise HTTPException(
-            status_code=400,
-            detail="Only CSV files are supported.",
+            detail=(
+                "Unsupported file type. "
+                "Supported formats: CSV, XLS, XLSX."
+            ),
         )
 
     try:
         content = file.file.read()
-        imported_tasks = parse_csv(content)
+
+        if not content:
+            raise HTTPException(
+                status_code=400,
+                detail="CSV file is empty.",
+            )
+
+        file_hash = calculate_file_hash(content)
+
+        existing_import = (
+            db.query(ImportRecord)
+            .filter(ImportRecord.file_hash == file_hash)
+            .first()
+        )
+
+        if existing_import:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "This file has already been imported."
+                ),
+            )
+
+        imported_tasks = parse_import_file(
+            content,
+            file.filename,
+        )
 
         if not imported_tasks:
             raise HTTPException(
                 status_code=400,
                 detail="CSV file contains no data rows.",
             )
-
         projects_created = 0
         tasks_created = 0
 
@@ -154,6 +185,13 @@ def import_csv(
             db.add(task)
             tasks_created += 1
 
+        import_record = ImportRecord(
+            filename=file.filename,
+            file_hash=file_hash,
+            imported_at=datetime.utcnow(),
+        )
+
+        db.add(import_record)
         db.commit()
 
         return {
@@ -396,3 +434,60 @@ def get_ai_evaluation_payload(
         effort_risk=effort_risk,
         project_health=project_health,
     )
+
+
+@app.get("/projects/{project_id}/ai-evaluation")
+def get_ai_evaluation(
+    project_id: int,
+    db: Session = Depends(get_db),
+):
+    project = (
+        db.query(Project)
+        .filter(Project.id == project_id)
+        .first()
+    )
+
+    if not project:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found",
+        )
+
+    tasks = (
+        db.query(Task)
+        .filter(Task.project_id == project_id)
+        .all()
+    )
+
+    delivery_metrics = calculate_delivery_metrics(tasks)
+
+    overdue_tasks = calculate_overdue_tasks(tasks)
+
+    effort_metrics = calculate_effort_metrics(tasks)
+
+    schedule_risk = calculate_schedule_risk(
+        delivery_metrics["completion_percentage"],
+        len(overdue_tasks),
+    )
+
+    effort_risk = calculate_effort_risk(
+        effort_metrics["effort_variance_percentage"],
+    )
+
+    project_health = calculate_project_health(
+        schedule_risk,
+        effort_risk,
+    )
+
+    payload = build_ai_evaluation_payload(
+        project=project,
+        tasks=tasks,
+        delivery_metrics=delivery_metrics,
+        overdue_tasks=overdue_tasks,
+        effort_metrics=effort_metrics,
+        schedule_risk=schedule_risk,
+        effort_risk=effort_risk,
+        project_health=project_health,
+    )
+
+    return evaluate_project_with_ai(payload)

@@ -87,3 +87,15 @@ export const getProjectIntelligence = async (projectId) => {
 
   return response.json();
 };
+
+export const getProjectAIEvaluation = async (projectId) => {
+  const response = await fetch(
+    `${API_URL}/projects/${projectId}/ai-evaluation`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to load AI project evaluation");
+  }
+
+  return response.json();
+};
