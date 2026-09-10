@@ -10,6 +10,26 @@ export const getProjects = async () => {
   return response.json();
 };
 
+export const importProjectFile = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_URL}/import/file`, {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.detail || "Failed to import project file"
+    );
+  }
+
+  return data;
+};
+
 export const createProject = async (project) => {
   const response = await fetch(`${API_URL}/projects`, {
     method: "POST",

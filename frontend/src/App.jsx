@@ -8,6 +8,7 @@ import {
   getTasks,
   getProjectIntelligence,
   getProjectAIEvaluation,
+  importProjectFile,
   updateTask,
 } from "./services/api";
 
@@ -42,6 +43,11 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+
+  const [importFile, setImportFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState("");
+  const [importResult, setImportResult] = useState(null);
 
   const fetchProjects = async () => {
   try {
@@ -141,7 +147,7 @@ const saveTask = async (taskId) => {
   }
 };
 
-  const totalTasks = intelligence?.total_tasks ?? 0;
+const totalTasks = intelligence?.total_tasks ?? 0;
 const completedTasks = intelligence?.completed_tasks ?? 0;
 const inProgressTasks = intelligence?.in_progress_tasks ?? 0;
 const notStartedTasks = intelligence?.not_started_tasks ?? 0;
@@ -164,6 +170,41 @@ const completionPercentage =
   fetchIntelligence(selectedProjectId);
   fetchAIEvaluation(selectedProjectId);
 }, [selectedProjectId]);
+
+
+  const handleImport = async (event) => {
+    event.preventDefault();
+
+    if (!importFile) {
+      setImportError("Please select a CSV, XLS, or XLSX file.");
+      return;
+    }
+
+    const allowedExtensions = [".csv", ".xls", ".xlsx"];
+    const fileName = importFile.name.toLowerCase();
+
+    if (!allowedExtensions.some((extension) => fileName.endsWith(extension))) {
+      setImportError("Unsupported file type. Please select CSV, XLS, or XLSX.");
+      return;
+    }
+
+    try {
+      setImporting(true);
+      setImportError("");
+      setImportResult(null);
+
+      const result = await importProjectFile(importFile);
+
+      setImportResult(result);
+      setImportFile(null);
+
+      await fetchProjects();
+    } catch (err) {
+      setImportError(err.message);
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const createProject = async (event) => {
     event.preventDefault();
@@ -258,6 +299,96 @@ const completionPercentage =
       <main className="workspace">
         <section className="card">
           <h2>Create Project</h2>
+
+          <section className="card">
+            <div className="section-header">
+              <div>
+                <h2>Import Project Data</h2>
+                <p>
+                  Bring project and task data from your existing
+                  project-management system into IPDW.
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleImport}>
+              <label htmlFor="import-file">
+                Project Data File
+              </label>
+
+              <input
+                id="import-file"
+                type="file"
+                accept=".csv,.xls,.xlsx"
+                onChange={(event) => {
+                  setImportFile(event.target.files[0] || null);
+                  setImportError("");
+                  setImportResult(null);
+                }}
+              />
+
+              <p className="empty-state">
+                Supported formats: CSV, XLS, XLSX
+              </p>
+
+              <button type="submit" disabled={importing}>
+                {importing ? "Importing..." : "Import File"}
+              </button>
+            </form>
+
+            {importError && (
+              <p className="error">{importError}</p>
+            )}
+
+            {importResult && (
+              <div className="import-result">
+                <h3>Import Completed</h3>
+
+                <p>
+                  {importResult.rows_processed} rows processed and{" "}
+                  {importResult.tasks_created} tasks imported.
+                </p>
+
+                <div className="metrics">
+                  <div className="metric">
+                    <span className="metric-label">
+                      New Projects
+                    </span>
+                    <strong>{importResult.projects_created}</strong>
+                  </div>
+
+                  <div className="metric">
+                    <span className="metric-label">
+                      Existing Projects
+                    </span>
+                    <strong>{importResult.existing_projects}</strong>
+                  </div>
+
+                  <div className="metric">
+                    <span className="metric-label">
+                      Tasks Imported
+                    </span>
+                    <strong>{importResult.tasks_created}</strong>
+                  </div>
+
+                  <div className="metric">
+                    <span className="metric-label">
+                      Rows Processed
+                    </span>
+                    <strong>{importResult.rows_processed}</strong>
+                  </div>
+                </div>
+
+                {importResult.existing_projects > 0 &&
+                  importResult.projects_created === 0 && (
+                    <p className="empty-state">
+                      Existing project detected. New tasks were added
+                      to the existing project.
+                    </p>
+                  )}
+              </div>
+            )}
+          </section>
 
           <form onSubmit={createProject}>
             <label htmlFor="project-name">Project Name</label>

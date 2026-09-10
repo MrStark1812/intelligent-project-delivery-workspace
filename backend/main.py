@@ -139,8 +139,8 @@ def import_file(
                 detail="CSV file contains no data rows.",
             )
         projects_created = 0
+        existing_projects = 0
         tasks_created = 0
-
         project_cache = {}
 
         for imported_task in imported_tasks:
@@ -166,6 +166,8 @@ def import_file(
                     db.flush()
 
                     projects_created += 1
+                else:
+                    existing_projects += 1
 
                 project_cache[project_name] = project
 
@@ -196,6 +198,7 @@ def import_file(
 
         return {
             "projects_created": projects_created,
+            "existing_projects": existing_projects,
             "tasks_created": tasks_created,
             "rows_processed": len(imported_tasks),
         }
